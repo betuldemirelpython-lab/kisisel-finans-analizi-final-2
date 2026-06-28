@@ -5,22 +5,22 @@
 # =============================================================================
 
 # ── Web Framework & API ──────────────────────────────────────────────────────
-fastapi==0.115.6           # REST API framework (backend endpoint'leri için)
-uvicorn[standard]==0.32.1  # ASGI sunucu (FastAPI'yi çalıştırmak için)
+fastapi>=0.100.0           # REST API framework
+uvicorn[standard]>=0.20.0  # ASGI sunucu
 
 # ── Kullanıcı Arayüzü ────────────────────────────────────────────────────────
-streamlit==1.41.1          # Web tabanlı kullanıcı arayüzü
+streamlit>=1.30.0          # Web tabanlı kullanıcı arayüzü
 
 # ── LLM Sağlayıcıları ────────────────────────────────────────────────────────
-google-generativeai==0.8.3 # Google Gemini API istemcisi (birincil LLM)
-groq==0.11.0               # Groq API istemcisi (Llama 3 yedek LLM)
+google-generativeai>=0.5.0 # Google Gemini API istemcisi
+groq>=0.9.0                # Groq API istemcisi
 
 # ── Ortam Değişkenleri ───────────────────────────────────────────────────────
-python-dotenv==1.0.1       # .env dosyasından API anahtarlarını okumak için
+python-dotenv>=1.0.0       # .env dosyasından API anahtarlarını okumak için
 
 # ── HTTP İstemcileri ─────────────────────────────────────────────────────────
-requests==2.32.3           # Streamlit → FastAPI HTTP istekleri için
-httpx==0.27.2              # Async HTTP istemci (opsiyonel, ileriki geliştirmeler için)
+requests>=2.30.0           # Streamlit → FastAPI HTTP istekleri için
+httpx>=0.25.0              # Async HTTP istemci
 
 # ── Veri Doğrulama ───────────────────────────────────────────────────────────
-pydantic==2.10.3           # FastAPI model şemaları ve veri doğrulama
+pydantic>=2.0.0            # FastAPI model şemaları ve veri doğrulama
