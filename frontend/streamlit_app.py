@@ -240,12 +240,12 @@ if analyze_btn:
         st.warning("⚠️ Lütfen en az 10 karakter içeren bir metin girin.")
     else:
         # Analiz sırasında spinner göster
-with st.spinner("🤖 AI analiz yapıyor... Bu işlem 30-60 saniye sürebilir."):
-    from backend.agent import FinanceAgent
-    result = FinanceAgent().run(user_input)
+        with st.spinner("🤖 AI analiz yapıyor... Bu işlem 30-60 saniye sürebilir."):
+            from backend.agent import FinanceAgent
+            result = FinanceAgent().run(user_input)
 
         # ── Başarı durumu ─────────────────────────────────────────────────────
-        else:
+        if result and result.get("status") != "error":
             st.success("✅ Analiz tamamlandı! Sonuçlarınız hazır.")
             st.balloons()
 
