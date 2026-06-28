@@ -1,0 +1,53 @@
+# =============================================================================
+# .gitignore — Git Dışlama Listesi
+# =============================================================================
+
+# ── Ortam Değişkenleri (ÇOK ÖNEMLİ — asla commit'leme!) ───────────────────
+.env
+.env.local
+.env.production
+
+# ── Python Cache & Derleme Dosyaları ────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# ── Sanal Ortam ──────────────────────────────────────────────────────────────
+venv/
+env/
+ENV/
+.venv/
+.env/
+
+# ── IDE & Editör Dosyaları ────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# ── Streamlit ────────────────────────────────────────────────────────────────
+.streamlit/secrets.toml
+
+# ── Jupyter ──────────────────────────────────────────────────────────────────
+.ipynb_checkpoints
+*.ipynb
+
+# ── Test & Coverage ───────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ── Build & Distribution ─────────────────────────────────────────────────────
+dist/
+build/
+*.egg-info/
+
+# ── Log Dosyaları ─────────────────────────────────────────────────────────────
+*.log
+logs/
