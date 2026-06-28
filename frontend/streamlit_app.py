@@ -27,23 +27,29 @@ st.set_page_config(
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'backend'))
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-# Ortam değişkenlerini yükle
+# Ortam değişkenlerini yükle ve yerel modda olup olmadığımızı kontrol et
+is_local = False
 try:
     from dotenv import load_dotenv
-    load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
-    load_dotenv(os.path.join(os.path.dirname(__file__), '..', 'backend', '.env'))
+    env_path = os.path.join(os.path.dirname(__file__), '..', '.env')
+    backend_env_path = os.path.join(os.path.dirname(__file__), '..', 'backend', '.env')
+    
+    if os.path.exists(env_path) or os.path.exists(backend_env_path):
+        is_local = True
+        load_dotenv(env_path)
+        load_dotenv(backend_env_path)
 except ImportError:
     pass
 
-# Streamlit secrets (Streamlit Cloud'da tanımlanan şifreler/API anahtarları)
-try:
-    if "GEMINI_API_KEY" in st.secrets:
-        os.environ["GEMINI_API_KEY"] = st.secrets["GEMINI_API_KEY"]
-    if "GROQ_API_KEY" in st.secrets:
-        os.environ["GROQ_API_KEY"] = st.secrets["GROQ_API_KEY"]
-except Exception:
-    # Yerelde secrets.toml dosyası yoksa hatayı yoksay
-    pass
+# Streamlit secrets (Yalnızca canlı ortamda/Streamlit Cloud'da çalıştırılır)
+if not is_local:
+    try:
+        if "GEMINI_API_KEY" in st.secrets:
+            os.environ["GEMINI_API_KEY"] = st.secrets["GEMINI_API_KEY"]
+        if "GROQ_API_KEY" in st.secrets:
+            os.environ["GROQ_API_KEY"] = st.secrets["GROQ_API_KEY"]
+    except Exception:
+        pass
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Özel CSS Stilleri — daha profesyonel görünüm için
