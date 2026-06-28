@@ -103,42 +103,6 @@ st.markdown(
 # =============================================================================
 # API ÇAĞRISI FONKSİYONU (AKILLI HİBRİT MOTOR)
 # =============================================================================
-def call_api(user_input: str, backend_url: str) -> dict:
-    """
-    FastAPI backend'ine POST isteği atarak harcama analizi yaptırır.
-    Eğer backend kapalıysa veya Streamlit Cloud üzerindeysek, doğrudan
-    FinanceAgent nesnesini import edip çalıştırır (Sunucusuz Fallback).
-    """
-    endpoint = f"{backend_url.rstrip('/')}/analyze"
-
-    # Adım 1: FastAPI API sunucusuna istek göndermeyi dene
-    try:
-        response = requests.post(
-            url=endpoint,
-            json={"user_input": user_input},
-            timeout=10,  # Hızlıca karar vermek için kısa bağlantı süresi
-            headers={"Content-Type": "application/json"},
-        )
-        if response.status_code == 200:
-            return response.json()
-    except Exception:
-        # Bağlantı başarısız olduysa veya sunucu kapalıysa sessizce Adım 2'ye geç
-        pass
-
-    # Adım 2: Sunucusuz Direct Fallback Modu (Direct Python Import)
-    try:
-        from agent import FinanceAgent
-        agent = FinanceAgent()
-        return agent.analyze(user_input)
-    except Exception as e:
-        return {
-            "status": "error",
-            "message": (
-                f"❌ AI Analiz Motoru çalıştırılamadı.\n\n"
-                f"**Olası Neden:** API Anahtarları (.env veya Streamlit Secrets) eksik veya hatalı.\n\n"
-                f"**Hata Detayı:** {str(e)}"
-            ),
-        }
 
 
 # =============================================================================
@@ -151,31 +115,6 @@ with st.sidebar:
         "AI destekli kişisel finans analizi. "
         "Harcamalarınızı analiz eder, tasarruf fırsatları bulur."
     )
-
-    st.divider()
-
-    # Backend URL ayarı
-    st.markdown("### ⚙️ Bağlantı Ayarları")
-    backend_url = st.text_input(
-        label="Backend URL",
-        value="http://localhost:8000",
-        help="FastAPI backend'inin çalıştığı adres",
-        placeholder="http://localhost:8000",
-    )
-
-    # Bağlantı testi
-    if st.button("🔌 Bağlantıyı Test Et", use_container_width=True):
-        try:
-            test_response = requests.get(
-                f"{backend_url.rstrip('/')}/health",
-                timeout=5,
-            )
-            if test_response.status_code == 200:
-                st.success("✅ Backend bağlantısı başarılı!")
-            else:
-                st.error(f"❌ Backend hata döndürdü: {test_response.status_code}")
-        except Exception:
-            st.error("❌ Backend'e ulaşılamıyor!")
 
     st.divider()
 
@@ -301,17 +240,9 @@ if analyze_btn:
         st.warning("⚠️ Lütfen en az 10 karakter içeren bir metin girin.")
     else:
         # Analiz sırasında spinner göster
-        with st.spinner("🤖 AI analiz yapıyor... Bu işlem 30-60 saniye sürebilir."):
-            result = call_api(user_input, backend_url)
-
-        # ── Hata durumu ──────────────────────────────────────────────────────
-        if result.get("status") == "error":
-            st.error("### ❌ Analiz Başarısız")
-            st.markdown(result.get("message", "Bilinmeyen bir hata oluştu."))
-            st.info(
-                "💡 **İpucu:** Backend'in çalıştığından emin olun. "
-                "Terminalde `cd backend && uvicorn app:app --reload` komutunu çalıştırın."
-            )
+with st.spinner("🤖 AI analiz yapıyor... Bu işlem 30-60 saniye sürebilir."):
+    from backend.agent import FinanceAgent
+    result = FinanceAgent().run(user_input)
 
         # ── Başarı durumu ─────────────────────────────────────────────────────
         else:
