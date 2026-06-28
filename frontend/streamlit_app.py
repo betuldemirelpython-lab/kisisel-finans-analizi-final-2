@@ -10,6 +10,19 @@ import streamlit as st
 import os
 import sys
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Sayfa genel ayarları (HER ZAMAN EN BAŞTA ÇALIŞMALIDIR)
+# ─────────────────────────────────────────────────────────────────────────────
+st.set_page_config(
+    page_title="💰 AI Kişisel Finans Asistanı",
+    page_icon="💰",
+    layout="wide",
+    initial_sidebar_state="expanded",
+    menu_items={
+        "About": "AI destekli kişisel finans analizi ve tasarruf asistanı.",
+    },
+)
+
 # Backend klasörünü arama yoluna ekle (Streamlit'in modülleri bulabilmesi için)
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'backend'))
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
@@ -31,19 +44,6 @@ try:
 except Exception:
     # Yerelde secrets.toml dosyası yoksa hatayı yoksay
     pass
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Sayfa genel ayarları
-# ─────────────────────────────────────────────────────────────────────────────
-st.set_page_config(
-    page_title="💰 AI Kişisel Finans Asistanı",
-    page_icon="💰",
-    layout="wide",
-    initial_sidebar_state="expanded",
-    menu_items={
-        "About": "AI destekli kişisel finans analizi ve tasarruf asistanı.",
-    },
-)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Özel CSS Stilleri — daha profesyonel görünüm için
