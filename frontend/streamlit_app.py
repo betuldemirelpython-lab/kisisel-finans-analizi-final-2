@@ -242,7 +242,7 @@ if analyze_btn:
         # Analiz sırasında spinner göster
         with st.spinner("🤖 AI analiz yapıyor... Bu işlem 30-60 saniye sürebilir."):
             from backend.agent import FinanceAgent
-            result = FinanceAgent().run(user_input)
+            result = FinanceAgent().analyze(user_input)
 
         # ── Başarı durumu ─────────────────────────────────────────────────────
         if result and result.get("status") != "error":
