@@ -58,12 +58,19 @@ class FinanceAgent:
         self.gemini_api_key = os.getenv("GEMINI_API_KEY")
         if self.gemini_api_key:
             genai.configure(api_key=self.gemini_api_key)
-            self.gemini_model = genai.GenerativeModel(
+            self.gemini_model_20 = genai.GenerativeModel(
                 model_name="gemini-2.0-flash",
                 system_instruction=SYSTEM_PROMPT,
             )
-            logger.info("✅ Gemini API bağlantısı kuruldu.")
+            self.gemini_model_15 = genai.GenerativeModel(
+                model_name="gemini-1.5-flash",
+                system_instruction=SYSTEM_PROMPT,
+            )
+            self.gemini_model = self.gemini_model_20  # Geriye dönük uyumluluk için
+            logger.info("✅ Gemini API bağlantısı kuruldu (Gemini 2.0 ve 1.5 hazır).")
         else:
+            self.gemini_model_20 = None
+            self.gemini_model_15 = None
             self.gemini_model = None
             logger.warning("⚠️  GEMINI_API_KEY bulunamadı! Gemini devre dışı.")
 
@@ -71,13 +78,13 @@ class FinanceAgent:
         self.groq_api_key = os.getenv("GROQ_API_KEY")
         if self.groq_api_key:
             self.groq_client = Groq(api_key=self.groq_api_key)
-            logger.info("✅ Groq API bağlantısı kuruldu.")
+            logger.info("✅ Groq API bağlantısı kuruldu (Llama 3.3 ve Llama 3.1 hazır).")
         else:
             self.groq_client = None
             logger.warning("⚠️  GROQ_API_KEY bulunamadı! Groq devre dışı.")
 
         # En az bir LLM çalışmalı
-        if not self.gemini_model and not self.groq_client:
+        if not self.gemini_model_20 and not self.groq_client:
             raise ValueError(
                 "❌ Hiçbir API anahtarı bulunamadı! "
                 ".env dosyasına GEMINI_API_KEY veya GROQ_API_KEY ekleyin."
@@ -90,32 +97,33 @@ class FinanceAgent:
         """
         LLM'e prompt gönderir ve yanıtı döndürür.
         
-        Önce Gemini'yi dener. Hata alırsa Groq'a geçer.
-        Her iki LLM de başarısız olursa hata fırlatır.
-        
-        Args:
-            prompt: LLM'e gönderilecek prompt metni
-            
-        Returns:
-            LLM'in ürettiği metin yanıtı
-            
-        Raises:
-            Exception: Her iki LLM de yanıt vermezse
+        Önce Gemini 2.0-flash'ı dener.
+        Hata alırsa Gemini 1.5-flash'ı dener.
+        O da hata alırsa Groq Llama-3.3-70b'yi dener.
+        O da hata alırsa Groq Llama-3.1-8b'yi dener.
+        Tümü başarısız olursa hata fırlatır.
         """
-        gemini_error_msg = "Gemini API anahtarı bulunamadı veya model başlatılamadı."
-        
-        # ── Gemini ile dene ──────────────────────────────────────────────────
-        if self.gemini_model:
-            try:
-                response = self.gemini_model.generate_content(prompt)
-                return response.text
-            except Exception as gemini_error:
-                gemini_error_msg = str(gemini_error)
-                logger.warning(
-                    f"⚠️  Gemini başarısız, Groq'a geçiliyor... Hata: {gemini_error}"
-                )
+        errors = []
 
-        # ── Groq ile dene (fallback) ─────────────────────────────────────────
+        # 1. Gemini 2.0-flash dene
+        if self.gemini_model_20:
+            try:
+                response = self.gemini_model_20.generate_content(prompt)
+                return response.text
+            except Exception as e:
+                errors.append(f"Gemini 2.0-flash Hatası: {e}")
+                logger.warning(f"⚠️ Gemini 2.0-flash başarısız. Hata: {e}")
+
+        # 2. Gemini 1.5-flash dene
+        if self.gemini_model_15:
+            try:
+                response = self.gemini_model_15.generate_content(prompt)
+                return response.text
+            except Exception as e:
+                errors.append(f"Gemini 1.5-flash Hatası: {e}")
+                logger.warning(f"⚠️ Gemini 1.5-flash başarısız. Hata: {e}")
+
+        # 3. Groq llama-3.3-70b-versatile dene
         if self.groq_client:
             try:
                 response = self.groq_client.chat.completions.create(
@@ -128,17 +136,32 @@ class FinanceAgent:
                     max_tokens=2048,
                 )
                 return response.choices[0].message.content
-            except Exception as groq_error:
-                logger.error(f"❌ Groq da başarısız oldu. Hata: {groq_error}")
-                raise Exception(
-                    f"Her iki LLM de yanıt vermedi.\n"
-                    f"- Gemini Hatası: {gemini_error_msg}\n"
-                    f"- Groq Hatası: {groq_error}"
-                )
+            except Exception as e:
+                errors.append(f"Groq Llama-3.3-70b Hatası: {e}")
+                logger.warning(f"⚠️ Groq Llama-3.3-70b başarısız. Hata: {e}")
 
+        # 4. Groq llama-3.1-8b-instant dene
+        if self.groq_client:
+            try:
+                response = self.groq_client.chat.completions.create(
+                    model="llama-3.1-8b-instant",
+                    messages=[
+                        {"role": "system", "content": SYSTEM_PROMPT},
+                        {"role": "user", "content": prompt},
+                    ],
+                    temperature=0.3,
+                    max_tokens=2048,
+                )
+                return response.choices[0].message.content
+            except Exception as e:
+                errors.append(f"Groq Llama-3.1-8b Hatası: {e}")
+                logger.warning(f"⚠️ Groq Llama-3.1-8b başarısız. Hata: {e}")
+
+        # Hepsi başarısız olduysa
+        error_details = "\n".join(f"- {err}" for err in errors)
         raise Exception(
-            f"Hiçbir LLM kullanılabilir durumda değil.\n"
-            f"- Gemini Hatası: {gemini_error_msg}"
+            f"Kullanılabilir tüm AI modelleri yanıt vermedi. Lütfen API kotalarınızı kontrol edin.\n\n"
+            f"Hata Detayları:\n{error_details}"
         )
 
     # ─────────────────────────────────────────────────────────────────────────
