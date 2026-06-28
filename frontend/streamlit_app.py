@@ -23,10 +23,14 @@ except ImportError:
     pass
 
 # Streamlit secrets (Streamlit Cloud'da tanımlanan şifreler/API anahtarları)
-if "GEMINI_API_KEY" in st.secrets:
-    os.environ["GEMINI_API_KEY"] = st.secrets["GEMINI_API_KEY"]
-if "GROQ_API_KEY" in st.secrets:
-    os.environ["GROQ_API_KEY"] = st.secrets["GROQ_API_KEY"]
+try:
+    if "GEMINI_API_KEY" in st.secrets:
+        os.environ["GEMINI_API_KEY"] = st.secrets["GEMINI_API_KEY"]
+    if "GROQ_API_KEY" in st.secrets:
+        os.environ["GROQ_API_KEY"] = st.secrets["GROQ_API_KEY"]
+except Exception:
+    # Yerelde secrets.toml dosyası yoksa hatayı yoksay
+    pass
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Sayfa genel ayarları
