@@ -102,12 +102,15 @@ class FinanceAgent:
         Raises:
             Exception: Her iki LLM de yanıt vermezse
         """
+        gemini_error_msg = "Gemini API anahtarı bulunamadı veya model başlatılamadı."
+        
         # ── Gemini ile dene ──────────────────────────────────────────────────
         if self.gemini_model:
             try:
                 response = self.gemini_model.generate_content(prompt)
                 return response.text
             except Exception as gemini_error:
+                gemini_error_msg = str(gemini_error)
                 logger.warning(
                     f"⚠️  Gemini başarısız, Groq'a geçiliyor... Hata: {gemini_error}"
                 )
@@ -128,13 +131,14 @@ class FinanceAgent:
             except Exception as groq_error:
                 logger.error(f"❌ Groq da başarısız oldu. Hata: {groq_error}")
                 raise Exception(
-                    f"Her iki LLM de yanıt vermedi. "
-                    f"Gemini & Groq hataları: {groq_error}"
+                    f"Her iki LLM de yanıt vermedi.\n"
+                    f"- Gemini Hatası: {gemini_error_msg}\n"
+                    f"- Groq Hatası: {groq_error}"
                 )
 
         raise Exception(
-            "Hiçbir LLM kullanılabilir durumda değil. "
-            "API anahtarlarını kontrol edin."
+            f"Hiçbir LLM kullanılabilir durumda değil.\n"
+            f"- Gemini Hatası: {gemini_error_msg}"
         )
 
     # ─────────────────────────────────────────────────────────────────────────
