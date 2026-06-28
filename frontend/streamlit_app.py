@@ -7,6 +7,26 @@
 
 import requests
 import streamlit as st
+import os
+import sys
+
+# Backend klasörünü arama yoluna ekle (Streamlit'in modülleri bulabilmesi için)
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'backend'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+
+# Ortam değişkenlerini yükle
+try:
+    from dotenv import load_dotenv
+    load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
+    load_dotenv(os.path.join(os.path.dirname(__file__), '..', 'backend', '.env'))
+except ImportError:
+    pass
+
+# Streamlit secrets (Streamlit Cloud'da tanımlanan şifreler/API anahtarları)
+if "GEMINI_API_KEY" in st.secrets:
+    os.environ["GEMINI_API_KEY"] = st.secrets["GEMINI_API_KEY"]
+if "GROQ_API_KEY" in st.secrets:
+    os.environ["GROQ_API_KEY"] = st.secrets["GROQ_API_KEY"]
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Sayfa genel ayarları
@@ -71,63 +91,43 @@ st.markdown(
 
 
 # =============================================================================
-# API ÇAĞRISI FONKSİYONU
+# API ÇAĞRISI FONKSİYONU (AKILLI HİBRİT MOTOR)
 # =============================================================================
 def call_api(user_input: str, backend_url: str) -> dict:
     """
     FastAPI backend'ine POST isteği atarak harcama analizi yaptırır.
-
-    Args:
-        user_input: Kullanıcının girdiği harcama metni
-        backend_url: FastAPI'nin çalıştığı URL (örn: http://localhost:8000)
-
-    Returns:
-        API yanıtını içeren dictionary, hata durumunda hata mesajı içerir
+    Eğer backend kapalıysa veya Streamlit Cloud üzerindeysek, doğrudan
+    FinanceAgent nesnesini import edip çalıştırır (Sunucusuz Fallback).
     """
     endpoint = f"{backend_url.rstrip('/')}/analyze"
 
+    # Adım 1: FastAPI API sunucusuna istek göndermeyi dene
     try:
         response = requests.post(
             url=endpoint,
             json={"user_input": user_input},
-            timeout=90,  # LLM yanıtı zaman alabilir, 90 saniye bekle
+            timeout=10,  # Hızlıca karar vermek için kısa bağlantı süresi
             headers={"Content-Type": "application/json"},
         )
-        response.raise_for_status()  # HTTP 4xx/5xx hataları için exception fırlat
-        return response.json()
+        if response.status_code == 200:
+            return response.json()
+    except Exception:
+        # Bağlantı başarısız olduysa veya sunucu kapalıysa sessizce Adım 2'ye geç
+        pass
 
-    except requests.exceptions.ConnectionError:
-        return {
-            "status": "error",
-            "message": (
-                f"❌ Backend'e bağlanılamıyor!\n\n"
-                f"**URL:** {endpoint}\n\n"
-                "Lütfen FastAPI'nin çalıştığından emin olun:\n"
-                "`uvicorn app:app --reload` komutunu çalıştırın."
-            ),
-        }
-    except requests.exceptions.Timeout:
-        return {
-            "status": "error",
-            "message": (
-                "⏱️ İstek zaman aşımına uğradı (90 saniye).\n\n"
-                "LLM yanıt vermekte gecikti. Lütfen tekrar deneyin."
-            ),
-        }
-    except requests.exceptions.HTTPError as e:
-        error_detail = ""
-        try:
-            error_detail = response.json().get("detail", str(e))
-        except Exception:
-            error_detail = str(e)
-        return {
-            "status": "error",
-            "message": f"❌ API Hatası: {error_detail}",
-        }
+    # Adım 2: Sunucusuz Direct Fallback Modu (Direct Python Import)
+    try:
+        from agent import FinanceAgent
+        agent = FinanceAgent()
+        return agent.analyze(user_input)
     except Exception as e:
         return {
             "status": "error",
-            "message": f"❌ Beklenmedik hata: {str(e)}",
+            "message": (
+                f"❌ AI Analiz Motoru çalıştırılamadı.\n\n"
+                f"**Olası Neden:** API Anahtarları (.env veya Streamlit Secrets) eksik veya hatalı.\n\n"
+                f"**Hata Detayı:** {str(e)}"
+            ),
         }
 
 
