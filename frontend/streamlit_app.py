@@ -297,6 +297,8 @@ if analyze_btn:
                     "> 📌 **Hatırlatma:** Bu öneriler AI tarafından üretilmektedir. "
                     "Büyük finansal kararlar için bir uzmanla görüşmenizi öneririz."
                 )
+        else:
+            st.error(f"❌ Analiz sırasında bir hata oluştu: {result.get('message', 'Bilinmeyen hata') if result else 'Sonuç alınamadı'}")
 
 
 # =============================================================================
